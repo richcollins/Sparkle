@@ -55,6 +55,9 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
 - initForBundle:(NSBundle *)bundle
 {
 	self = [super init];
+	
+	usesSecurity = YES;
+	
     if (bundle == nil) bundle = [NSBundle mainBundle];
 	
 	// Register as observer straight away to avoid exceptions on -dealloc when -unregisterAsObserver is called:
@@ -74,10 +77,6 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
         [sharedUpdaters setObject:self forKey:[NSValue valueWithNonretainedObject:bundle]];
         host = [[SUHost alloc] initWithBundle:bundle];
 		
-		// Saving-the-developer-from-a-stupid-mistake-check:
-		if (![[[self feedURL] scheme] isEqualToString:@"https"] && ![host publicDSAKey])
-			NSRunAlertPanel(@"Insecure update error!", @"For security reasons, you need to distribute your appcast over SSL or sign your updates. See Sparkle's documentation for more information.", @"OK", nil, nil);
-		
         // This runs the permission prompt if needed, but never before the app has finished launching because the runloop won't run before that
         [self performSelector:@selector(startUpdateCycle) withObject:nil afterDelay:0];
 	}
@@ -87,13 +86,31 @@ static NSString * const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefault
 // This will be used when the updater is instantiated in a nib such as MainMenu
 - (id)init
 {
+	usesSecurity = YES;
     return [self initForBundle:[NSBundle mainBundle]];
+}
+
+- (BOOL)usesSecurity
+{
+	return usesSecurity;
+}
+
+- (void)setUsesSecurity:(BOOL)newUsesSecurity
+{
+	usesSecurity = newUsesSecurity;
 }
 
 - (NSString *)description { return [NSString stringWithFormat:@"%@ <%@>", [self class], [host bundlePath]]; }
 
 - (void)startUpdateCycle
 {
+	if (usesSecurity)
+	{
+		// Saving-the-developer-from-a-stupid-mistake-check:
+		if (![[[self feedURL] scheme] isEqualToString:@"https"] && ![host publicDSAKey])
+			NSRunAlertPanel(@"Insecure update error!", @"For security reasons, you need to distribute your appcast over SSL or sign your updates. See Sparkle's documentation for more information.", @"OK", nil, nil);
+	}
+	
     BOOL shouldPrompt = NO;
     
 	// If the user has been asked about automatic checks, don't bother prompting

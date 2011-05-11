@@ -15,6 +15,8 @@
 @interface SUUpdater : NSObject
 {
 @private
+	BOOL usesSecurity;
+	
 	NSTimer *checkTimer;
 	SUUpdateDriver *driver;
 
@@ -28,6 +30,9 @@
 - initForBundle:(NSBundle *)bundle;
 
 - (NSBundle *)hostBundle;
+
+- (void)setUsesSecurity:(BOOL)newUsesSecurity;
+- (BOOL)usesSecurity;
 
 - (void)setDelegate:(id)delegate;
 - delegate;
